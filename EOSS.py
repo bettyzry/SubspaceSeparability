@@ -36,13 +36,13 @@ class EOSS:
         outliers = np.where(self.y == 1)[0]
         reason = pd.DataFrame(outliers, columns=['outlier'])
         reason['explainable_subspace'] = ''
-        reason['value'] = 0
+        reason['value'] = 0.1
         for ii, p in enumerate(outliers):
             explainable_subspace, score = self.get_single_explainable_subspace(p)
             reason['explainable_subspace'][ii] = explainable_subspace
-            print(score)
             reason['value'][ii] = score
-        reason.to_csv('result/reason.csv')
+            print(reason['value'][ii])
+        print(reason['value'].values)
         return reason
 
     def get_single_explainable_subspace(self, p):
@@ -71,10 +71,10 @@ class EOSS:
             accuracies[ii] = scores[-1]                         # 点p的得分
 
             kn.__del__()                                        # 释放kn
-
         argsort = accuracies.argsort(axis=0)                    # 根据数值大小，进行索引排序
         result = argsort[-1]
         explainable_subspace = subspaces[result]
+        print(accuracies, accuracies[result])
         return explainable_subspace, accuracies[result]
 
     def get_inlier_index(self, kn, p):
@@ -127,11 +127,13 @@ def do_eoss(relative_df):
 
     eoss = EOSS(X, y, k, a, subspaces_size=1)
     reason = eoss.get_expalinable_subspace()  # self.reason( 'outlier': index of outlier, 'reason')
+    reason.to_csv('result/reason.csv')
+    print(reason['value'].values)
     predict_df = relative_df[['trace_id', 'device_id', 'cluster_id', 'span_name', 'label']]
     predict_df = predict_df[predict_df.label == 1]  # fail=1, api=0
 
     predict_df['reason'] = [i[0] for i in reason['explainable_subspace'].values]
-    predict_df['value'] = reason['value']
+    predict_df['value'] = reason['value'].values
     predict_df = predict_df.drop(['label'], axis=1)
     return predict_df
 
